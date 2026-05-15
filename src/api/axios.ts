@@ -1,10 +1,13 @@
 // src/api/axios.ts
 import axios from 'axios';
 
-// This creates a master configuration for all your backend calls
+// Cookie-based auth — withCredentials sends the session cookie automatically.
+// No Bearer token needed.
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7015';
+
 const api = axios.create({
-  baseURL: 'https://localhost:7014', // Your ASP.NET Core backend URL
-  withCredentials: true,             // Required for Identity cookies
+  baseURL: BASE_URL,
+  withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
 });
 

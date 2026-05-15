@@ -2,19 +2,17 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-// Added AlertCircle for the error banner
-import { Mail, Lock, EyeOff, Eye, ShieldCheck, ArrowRight, Sun, Moon, AlertCircle } from "lucide-react";
-// Added AnimatePresence for the error banner animation
+import { User, Lock, EyeOff, Eye, ShieldCheck, ArrowRight, Sun, Moon, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 
-// The real API imports (with the crucial 'type' keyword)
 import { AuthAPI } from "../../api/auth";
-import type { LoginRequest } from "../../api/auth";
+import type { LoginDto } from "../../types";
 
+// Schema checks for generic string (username)
 const loginSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address." }),
+  username: z.string().min(1, { message: "Username is required." }),
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
 });
 
@@ -24,12 +22,10 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
   
-  // Added state to catch and display ASP.NET errors
   const [apiError, setApiError] = useState<string | null>(null);
   
   const navigate = useNavigate();
   
-  // Mapped to the updated setLogin function from our Zustand store
   const setLogin = useAuthStore((state) => state.setLogin);
 
   const {
@@ -42,26 +38,29 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
-      setApiError(null); // Clear previous errors
+      setApiError(null); 
 
-      // 1. Prepare the exact payload your ASP.NET Swagger expects
-      const payload: LoginRequest = {
-        email: data.email,
+      // 🌟 FIX: Payload perfectly matches the updated LoginDto and C# Backend
+      const payload: LoginDto = {
+        userName: data.username, 
         password: data.password,
-        rememberMe: true, 
+        rememberMe: true,
       };
 
-      // 2. Call the Real API
       const result = await AuthAPI.login(payload);
-      
-      // 3. Update Global State in Zustand (saves token + email)
-      setLogin(result.email, result.token);
 
-      // 4. Securely route to dashboard (replaces browser history)
+      if (!result.success) {
+        setApiError(result.message || "Login failed.");
+        return;
+      }
+
+      // 🌟 FIX: Safely pass the userName to your global state
+      setLogin(result.userName || result.email || data.username, result.roles);
+
+      // Securely route to dashboard
       navigate("/dashboard", { replace: true });
       
     } catch (error: any) {
-      // 5. Catch and display backend errors (e.g., 401 Unauthorized)
       const message = error.response?.data?.message || "Invalid credentials or server connection error.";
       setApiError(message);
     }
@@ -130,6 +129,7 @@ export default function LoginPage() {
               >
                 <ShieldCheck size={22} strokeWidth={2} />
               </div>
+
               <h1
                 className={`text-xl font-black tracking-tight transition-colors duration-700 ${
                   isDarkMode ? "text-white" : "text-[#0B1B3D]"
@@ -191,7 +191,6 @@ export default function LoginPage() {
             <p className="text-sm font-medium text-slate-500 mt-1">Please enter your credentials.</p>
           </div>
 
-          {/* NEW ERROR BANNER INSERTED HERE */}
           <AnimatePresence mode="wait">
             {apiError && (
               <motion.div 
@@ -207,26 +206,27 @@ export default function LoginPage() {
           </AnimatePresence>
 
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
+            
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold uppercase tracking-wide text-slate-500 ml-1">
-                Email Address
+                Username
               </label>
               <div
                 className={`relative flex items-center overflow-hidden rounded-xl border bg-slate-50 transition-all focus-within:bg-white focus-within:ring-4 ${
-                  errors.email
+                  errors.username
                     ? "border-red-400 focus-within:border-red-500 focus-within:ring-red-500/15"
                     : "border-slate-200 focus-within:border-[#00A3FF] focus-within:ring-[#00A3FF]/15"
                 }`}
               >
-                <Mail size={18} className="absolute left-4 text-slate-400" />
+                <User size={18} className="absolute left-4 text-slate-400" />
                 <input
-                  {...register("email")}
-                  type="email"
-                  placeholder="admin@lalgroup.com"
+                  {...register("username")}
+                  type="text"
+                  placeholder="e.g. LT10029"
                   className="w-full bg-transparent py-3.5 pl-11 pr-4 text-sm font-medium text-slate-900 placeholder-slate-400 outline-none"
                 />
               </div>
-              {errors.email && <p className="text-xs text-red-500 ml-1 mt-1">{errors.email.message}</p>}
+              {errors.username && <p className="text-xs text-red-500 ml-1 mt-1">{errors.username.message}</p>}
             </div>
 
             <div className="space-y-1.5">
@@ -280,7 +280,6 @@ export default function LoginPage() {
               </span>
             </motion.button>
 
-            {/* REGISTRATION LINK PRESERVED */}
             <div className="mt-4 text-center">
               <p className="text-sm font-medium text-slate-500">
                 Don't have an account?{" "}

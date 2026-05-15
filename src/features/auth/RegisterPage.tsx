@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 // Global Components & API
 import SuccessPopup from "../../components/global/SuccessPopup";
 import { AuthAPI } from "../../api/auth";
-import type { RegisterRequest } from "../../api/auth";
+import type { RegisterDto } from "../../types";
 
 // 1. Strict Validation Schema
 const registerSchema = z.object({
@@ -45,12 +45,11 @@ export default function RegisterPage() {
     try {
       setApiError(null);
 
-      // Map to the exact payload expected by Swagger
-      const payload: RegisterRequest = {
+      const payload: RegisterDto = {
         email: data.email,
         password: data.password,
         confirmPassword: data.confirmPassword,
-        role: data.role // Must match C# Seeded Roles
+        role: data.role,
       };
 
       // Call the API

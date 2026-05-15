@@ -1,16 +1,16 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { LogOut, UserCircle, Palette, Check, Menu, Lock, Info } from "lucide-react";
-import { useAuthStore } from "../../store/authStore";
+import { useState, useRef, useEffect } from "react";
+// 🌟 FIX: Imported Info and Lock icons to match your design
+import { Palette, Check, Menu, X, Info, Lock } from "lucide-react";
+import ProfileDropdown from "./ProfileDropdown"; 
+import NotesDrawer from "./NotesDrawer"; 
 
-// --- Types ---
-type ThemeOption = { name: string; bg: string; hover: string; text: string; };
+type ThemeOption = { name: string; bg: string; dot: string; text: string };
 
 const THEME_OPTIONS: ThemeOption[] = [
-  { name: "Blue", bg: "bg-blue-600", hover: "hover:bg-blue-50", text: "text-blue-600" },
-  { name: "Emerald", bg: "bg-emerald-600", hover: "hover:bg-emerald-50", text: "text-emerald-600" },
-  { name: "Slate", bg: "bg-slate-800", hover: "hover:bg-slate-50", text: "text-slate-800" },
-  { name: "Indigo", bg: "bg-indigo-600", hover: "hover:bg-indigo-50", text: "text-indigo-600" },
+  { name: "Blue",    bg: "bg-blue-600",    dot: "bg-blue-500",    text: "text-blue-600" },
+  { name: "Emerald", bg: "bg-emerald-600", dot: "bg-emerald-500", text: "text-emerald-600" },
+  { name: "Slate",   bg: "bg-slate-800",   dot: "bg-slate-600",   text: "text-slate-700" },
+  { name: "Indigo",  bg: "bg-indigo-600",  dot: "bg-indigo-500",  text: "text-indigo-600" },
 ];
 
 interface NavbarProps {
@@ -20,85 +20,135 @@ interface NavbarProps {
 }
 
 export default function Navbar({ toggleSidebar, themeColor, setThemeColor }: NavbarProps) {
-  const [showThemeMenu, setShowThemeMenu] = useState(false);
-  const navigate = useNavigate();
-  const logout = useAuthStore((state) => state.logout);
+  const [showTheme, setShowTheme] = useState(false);
+  
+  // Drawer State Management
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [drawerSide, setDrawerSide] = useState<"left" | "right">("right");
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login", { replace: true });
+  const themeRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (themeRef.current && !themeRef.current.contains(e.target as Node)) {
+        setShowTheme(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleInstructionsClick = () => {
+    setDrawerSide("left");  
+    setIsDrawerOpen(true);
+  };
+
+  const handleNotesClick = () => {
+    setDrawerSide("right"); 
+    setIsDrawerOpen(true);
   };
 
   return (
-    <header className={`h-16 ${themeColor} flex items-center justify-between px-4 lg:px-8 text-white shadow-lg z-30 transition-all duration-300 shrink-0`}>
-      <div className="flex items-center gap-1 sm:gap-4">
-        <button
-          onClick={toggleSidebar}
-          className="p-2 hover:bg-white/10 rounded-xl transition-all active:scale-90 shrink-0"
-        >
-          <Menu size={22} />
-        </button>
-
-        <div className="flex flex-col select-none">
-          <span className="font-black text-sm sm:text-base md:text-lg tracking-tighter uppercase italic leading-none">
-            LAL Group<span className="text-white/60 font-light text-[10px] sm:text-xs ml-0.5">Portal</span>
-          </span>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
-        <button className="flex items-center gap-2 p-2 md:px-3 md:py-1.5 bg-blue-500/20 hover:bg-blue-500/40 border border-blue-200/30 backdrop-blur-md text-white rounded-lg sm:rounded-xl transition-all active:scale-95 group">
-          <Info size={18} className="text-blue-100 group-hover:rotate-12 transition-transform" />
-          <span className="text-[11px] font-bold tracking-wide hidden lg:block">Instructions</span>
-        </button>
-
-        <button className="flex items-center gap-2 p-2 md:px-3 md:py-1.5 bg-emerald-500/20 hover:bg-emerald-500/40 border border-emerald-200/30 backdrop-blur-md text-white rounded-lg sm:rounded-xl transition-all active:scale-95 group">
-          <Lock size={18} className="text-emerald-100 group-hover:-rotate-12 transition-transform" />
-          <span className="text-[11px] font-bold tracking-wide hidden lg:block">My Notes</span>
-        </button>
-
-        <div className="h-6 w-[1px] bg-white/20 mx-0.5" />
-
-        <div className="relative">
+    <>
+      <header
+        className={`
+          ${themeColor} shrink-0 z-30
+          flex items-center justify-between
+          px-3 sm:px-5
+          h-14 sm:h-16
+          shadow-md transition-colors duration-300
+          safe-top
+        `}
+      >
+        {/* Left — hamburger + title */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
-            onClick={() => setShowThemeMenu(!showThemeMenu)}
-            className="p-2 bg-white/10 hover:bg-white/20 rounded-lg sm:rounded-xl border border-white/20 transition-colors"
+            onClick={toggleSidebar}
+            aria-label="Toggle menu"
+            className="p-2 rounded-xl hover:bg-white/15 active:scale-90 transition-all shrink-0 touch-manipulation"
           >
-            <Palette size={18} />
+            <Menu size={20} className="text-white" />
           </button>
 
-          {showThemeMenu && (
-            <div className="absolute right-0 mt-3 w-44 sm:w-56 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 z-50">
-              {THEME_OPTIONS.map((option) => (
-                <button
-                  key={option.bg}
-                  onClick={() => {
-                    setThemeColor(option.bg);
-                    setShowThemeMenu(false);
-                  }}
-                  className={`flex items-center justify-between w-full p-2 rounded-xl ${option.hover}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-5 h-5 rounded-full ${option.bg} border-2 border-white shadow-sm`}></div>
-                    <span className="text-xs sm:text-sm font-semibold text-slate-700">{option.name}</span>
-                  </div>
-                  {themeColor === option.bg && <Check size={14} className={option.text} />}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center gap-1 sm:gap-3 pl-1 sm:pl-4 border-l border-white/20">
-          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center border border-white/40 shrink-0">
-            <UserCircle size={20} />
+          <div className="min-w-0">
+            <span className="font-black text-sm sm:text-base tracking-tight uppercase italic text-white leading-none truncate block">
+              LAL Group
+              <span className="text-white/50 font-light text-[10px] ml-1 not-italic normal-case">Portal</span>
+            </span>
           </div>
-          
-          <button onClick={handleLogout} className="p-2 hover:bg-red-500 rounded-lg sm:rounded-xl transition-all group shrink-0">
-            <LogOut size={18} className="group-hover:translate-x-1 transition-transform" />
-          </button>
         </div>
-      </div>
-    </header>
+
+        {/* Right — actions */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+
+          {/* 🌟 UPDATED: Instructions Button */}
+          <button
+            onClick={handleInstructionsClick}
+            aria-label="Open Instructions"
+            className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 active:scale-95 transition-all shadow-sm"
+          >
+            <Info size={16} strokeWidth={2.5} className="text-white" />
+            <span className="text-xs font-bold text-white tracking-wide">Instructions</span>
+          </button>
+
+          {/* 🌟 UPDATED: My Notes Button */}
+          <button
+            onClick={handleNotesClick}
+            aria-label="Open Notes"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 active:scale-95 transition-all shadow-sm"
+          >
+            <Lock size={15} strokeWidth={2.5} className="text-white" />
+            <span className="hidden sm:block text-xs font-bold text-white tracking-wide">My Notes</span>
+          </button>
+
+          {/* Theme picker */}
+          <div ref={themeRef} className="relative ml-1">
+            <button
+              onClick={() => setShowTheme(v => !v)}
+              aria-label="Change theme"
+              title="Theme"
+              className="p-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 active:scale-90 transition-all touch-manipulation shadow-sm"
+            >
+              <Palette size={16} className="text-white" />
+            </button>
+
+            {showTheme && (
+              <div className="absolute right-0 top-full mt-2 w-44 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 z-50">
+                <div className="flex items-center justify-between px-2 pb-2 mb-1 border-b border-slate-100">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Theme</span>
+                  <button onClick={() => setShowTheme(false)} className="text-slate-300 hover:text-slate-500">
+                    <X size={13} />
+                  </button>
+                </div>
+                {THEME_OPTIONS.map(opt => (
+                  <button
+                    key={opt.bg}
+                    onClick={() => { setThemeColor(opt.bg); setShowTheme(false); }}
+                    className="flex items-center justify-between w-full px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-4 h-4 rounded-full ${opt.dot} shadow-sm`} />
+                      <span className="text-sm font-semibold text-slate-700">{opt.name}</span>
+                    </div>
+                    {themeColor === opt.bg && <Check size={14} className={opt.text} />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="h-6 w-px bg-white/20 mx-0.5" />
+
+          <ProfileDropdown />
+          
+        </div>
+      </header>
+
+      <NotesDrawer 
+        isOpen={isDrawerOpen} 
+        onClose={() => setIsDrawerOpen(false)} 
+        side={drawerSide}
+      />
+    </>
   );
 }
